@@ -41,6 +41,7 @@ describe('KeyboardShortcuts', () => {
       const { lastFrame } = render(<KeyboardShortcuts />);
       const frame = lastFrame() ?? '';
       expect(frame).toContain(expectedPasteCell);
+      expect(frame).toContain('ctrl+c to copy / quit');
       for (const absent of absentKeys) {
         expect(frame).not.toContain(absent);
       }

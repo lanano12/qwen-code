@@ -10,6 +10,7 @@ import { useTextBuffer } from './text-buffer.js';
 import { usePreferredEditor } from '../../hooks/usePreferredEditor.js';
 import { useKeypress } from '../../hooks/useKeypress.js';
 import { keyMatchers, Command } from '../../keyMatchers.js';
+import { tryCopyActiveSelection } from '../../selection/use-text-selection.js';
 import { cpSlice, cpLen } from '../../utils/textUtils.js';
 import { theme } from '../../semantic-colors.js';
 import { Colors } from '../../colors.js';
@@ -159,6 +160,9 @@ export function TextInput({
       }
 
       if (keyMatchers[Command.CLEAR_INPUT](key)) {
+        if (tryCopyActiveSelection()) {
+          return;
+        }
         if (buffer.text.length > 0) buffer.setText('');
         return;
       }

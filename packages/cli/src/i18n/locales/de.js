@@ -2072,7 +2072,7 @@ export default {
   'for file paths': 'für Dateipfade',
   'to clear input': 'zum Leeren der Eingabe',
   'to cycle approvals': 'zum Wechseln der Freigaben',
-  'to quit': 'zum Beenden',
+  'to copy / quit': 'kopieren / Beenden',
   'for newline': 'für Zeilenumbruch',
   'to clear screen': 'zum Leeren des Bildschirms',
   'to search history': 'zum Durchsuchen des Verlaufs',

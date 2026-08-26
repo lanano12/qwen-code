@@ -52,7 +52,7 @@ export default {
   'for file paths': 'per als camins de fitxers',
   'to clear input': "per esborrar l'entrada",
   'to cycle approvals': 'per canviar les aprovacions',
-  'to quit': 'per sortir',
+  'to copy / quit': 'copiar / sortir',
   'for newline': 'per a nova línia',
   'to clear screen': 'per netejar la pantalla',
   'to search history': "per cercar a l'historial",

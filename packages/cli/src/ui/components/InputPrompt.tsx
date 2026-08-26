@@ -25,6 +25,7 @@ import { useExportCompletion } from '../hooks/useExportCompletion.js';
 import { useFollowupSuggestionsCLI } from '../hooks/useFollowupSuggestions.js';
 import type { Key } from '../hooks/useKeypress.js';
 import { keyMatchers, Command } from '../keyMatchers.js';
+import { tryCopyActiveSelection } from '../selection/use-text-selection.js';
 import type { CommandContext, SlashCommand } from '../commands/types.js';
 import { StreamingState } from '../types.js';
 import {
@@ -1826,6 +1827,9 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
 
       // Ctrl+C with completion active — also reset completion state
       if (keyMatchers[Command.CLEAR_INPUT](key)) {
+        if (tryCopyActiveSelection()) {
+          return true;
+        }
         exportCompletion.reset();
         if (buffer.text.length > 0) {
           resetCompletionState();

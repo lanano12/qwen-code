@@ -1502,7 +1502,7 @@ export default {
   'for file paths': 'ファイルパス用',
   'to clear input': '入力をクリア',
   'to cycle approvals': '承認モードを切り替え',
-  'to quit': '終了',
+  'to copy / quit': 'コピー / 終了',
   'for newline': '改行',
   'to clear screen': '画面をクリア',
   'to search history': '履歴を検索',

@@ -83,7 +83,7 @@ export default {
   'for file paths': 'пути к файлам',
   'to clear input': 'очистить ввод',
   'to cycle approvals': 'переключить режим',
-  'to quit': 'выход',
+  'to copy / quit': 'копировать / выход',
   'for newline': 'новая строка',
   'to clear screen': 'очистить экран',
   'to search history': 'поиск в истории',

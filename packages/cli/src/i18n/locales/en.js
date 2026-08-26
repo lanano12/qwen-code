@@ -273,7 +273,7 @@ export default {
   'for file paths': 'for file paths',
   'to clear input': 'to clear input',
   'to cycle approvals': 'to cycle approvals',
-  'to quit': 'to quit',
+  'to copy / quit': 'to copy / quit',
   'for newline': 'for newline',
   'to clear screen': 'to clear screen',
   'to search history': 'to search history',

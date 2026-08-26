@@ -27,6 +27,7 @@ import { TextInputMouseController } from './shared/TextInputMouseController.js';
 import type { Key } from '../hooks/useKeypress.js';
 import { useKeypress } from '../hooks/useKeypress.js';
 import { keyMatchers, Command } from '../keyMatchers.js';
+import { tryCopyActiveSelection } from '../selection/use-text-selection.js';
 import stringWidth from 'string-width';
 import { cpSlice, cpLen, truncateToWidth } from '../utils/textUtils.js';
 import { theme } from '../semantic-colors.js';
@@ -244,8 +245,11 @@ export const BaseTextInput = ({
         return;
       }
 
-      // Ctrl+C → clear input
+      // Ctrl+C → copy selection if any, otherwise clear input
       if (keyMatchers[Command.CLEAR_INPUT](key)) {
+        if (tryCopyActiveSelection()) {
+          return;
+        }
         if (buffer.text.length > 0) {
           buffer.setText('');
         }

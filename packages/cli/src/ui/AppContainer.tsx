@@ -191,6 +191,7 @@ import { useAwaySummary } from './hooks/useAwaySummary.js';
 import { useBracketedPaste } from './hooks/useBracketedPaste.js';
 import { useKeypress, type Key } from './hooks/useKeypress.js';
 import { keyMatchers, Command } from './keyMatchers.js';
+import { tryCopyActiveSelection } from './selection/use-text-selection.js';
 import { useLoadingIndicator } from './hooks/useLoadingIndicator.js';
 import { useTerminalProgress } from './hooks/useTerminalProgress.js';
 import { useFolderTrust } from './hooks/useFolderTrust.js';
@@ -4290,6 +4291,11 @@ export const AppContainer = (props: AppContainerProps) => {
 
       if (keyMatchers[Command.QUIT](key)) {
         if (isAuthenticating) {
+          return;
+        }
+
+        // Mouse-selected text: copy and skip the double-press quit sequence.
+        if (tryCopyActiveSelection()) {
           return;
         }
 

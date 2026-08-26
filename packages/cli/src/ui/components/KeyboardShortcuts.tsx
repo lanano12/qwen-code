@@ -37,7 +37,7 @@ const getShortcuts = (): Shortcut[] => [
     key: process.platform === 'win32' ? 'tab' : 'shift+tab',
     description: t('to cycle approvals'),
   },
-  { key: 'ctrl+c', description: t('to quit') },
+  { key: 'ctrl+c', description: t('to copy / quit') },
   { key: getNewlineKey(), description: t('for newline') + ' ⏎' },
   { key: 'ctrl+l', description: t('to clear screen') },
   { key: 'ctrl+o', description: t('to expand details') },

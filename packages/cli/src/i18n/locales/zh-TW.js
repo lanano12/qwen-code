@@ -258,7 +258,7 @@ export default {
   'for file paths': '檔案路徑',
   'to clear input': '清空輸入',
   'to cycle approvals': '切換審批模式',
-  'to quit': '退出',
+  'to copy / quit': '複製所選 / 退出',
   'for newline': '換行',
   'to clear screen': '清屏',
   'to search history': '搜索歷史',

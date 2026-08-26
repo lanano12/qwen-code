@@ -52,7 +52,7 @@ export default {
   'for file paths': 'pour les chemins de fichiers',
   'to clear input': "pour effacer l'entrée",
   'to cycle approvals': 'pour cycler les approbations',
-  'to quit': 'pour quitter',
+  'to copy / quit': 'copier / quitter',
   'for newline': 'pour une nouvelle ligne',
   'to clear screen': "pour effacer l'écran",
   'to search history': "pour rechercher dans l'historique",

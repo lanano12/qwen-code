@@ -48,7 +48,7 @@ export default {
   'for file paths': 'para caminhos de arquivo',
   'to clear input': 'para limpar entrada',
   'to cycle approvals': 'para alternar aprovações',
-  'to quit': 'para sair',
+  'to copy / quit': 'copiar / sair',
   'for newline': 'para nova linha',
   'to clear screen': 'para limpar a tela',
   'to search history': 'para pesquisar no histórico',

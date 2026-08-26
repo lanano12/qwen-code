@@ -80,6 +80,18 @@ export interface TextSelectionControllerProps {
 const MULTI_CLICK_MS = 400;
 const debugLogger = createDebugLogger('TEXT_SELECTION');
 
+type CopyActiveSelectionFn = () => boolean;
+
+let copyActiveSelectionImpl: CopyActiveSelectionFn | null = null;
+
+/**
+ * Copy highlighted TUI text if a non-empty selection exists.
+ * Returns true when text was sent to the clipboard so Ctrl+C can skip quit/clear.
+ */
+export function tryCopyActiveSelection(): boolean {
+  return copyActiveSelectionImpl?.() ?? false;
+}
+
 interface ClickRecord {
   x: number;
   y: number;
@@ -174,17 +186,25 @@ export function TextSelectionController(
     [getBuffer],
   );
 
-  const copySelection = useCallback(() => {
-    const normalized = selectionRef.current.normalized();
-    const text = normalized
-      ? getSelectedText(getBuffer()?.frame ?? null, normalized)
-      : '';
-    if (text) {
-      void copyToClipboard(text).catch((error: unknown) => {
-        debugLogger.warn('Failed to copy selected text:', error);
-      });
+  const copyCurrentSelection = useCallback((): boolean => {
+    const selection = selectionRef.current;
+    const normalized = selection.normalized();
+    if (!normalized || selection.isEmpty || selection.isBareClick) {
+      return false;
     }
+    const text = getSelectedText(getBuffer()?.frame ?? null, normalized);
+    if (!text) {
+      return false;
+    }
+    void copyToClipboard(text).catch((error: unknown) => {
+      debugLogger.warn('Failed to copy selected text:', error);
+    });
+    return true;
   }, [getBuffer]);
+
+  const copySelection = useCallback(() => {
+    copyCurrentSelection();
+  }, [copyCurrentSelection]);
 
   const mapEvent = useCallback(
     (event: MouseEvent): ReturnType<typeof terminalToGrid> | null => {
@@ -446,6 +466,15 @@ export function TextSelectionController(
       clearSelection();
     }
   }, [props.isActive, clearSelection]);
+
+  useEffect(() => {
+    copyActiveSelectionImpl = copyCurrentSelection;
+    return () => {
+      if (copyActiveSelectionImpl === copyCurrentSelection) {
+        copyActiveSelectionImpl = null;
+      }
+    };
+  }, [copyCurrentSelection]);
 
   return null;
 }

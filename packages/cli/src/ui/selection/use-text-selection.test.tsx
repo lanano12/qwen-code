@@ -11,7 +11,10 @@ import { useMouseEvents } from '../hooks/useMouseEvents.js';
 import type { MouseEvent } from '../utils/mouse.js';
 import { copyToClipboard } from '../utils/commandUtils.js';
 import { getScreenBuffer, type ScreenBuffer } from './screen-buffer.js';
-import { TextSelectionController } from './use-text-selection.js';
+import {
+  TextSelectionController,
+  tryCopyActiveSelection,
+} from './use-text-selection.js';
 
 const mocks = vi.hoisted(() => ({
   stdout: { rows: 10 },
@@ -797,5 +800,38 @@ describe('TextSelectionController', () => {
       ex: 4,
       ey: 0,
     });
+  });
+
+  it('copies the highlighted range from tryCopyActiveSelection', () => {
+    const handler = mount();
+    selectHello(handler);
+    vi.mocked(copyToClipboard).mockClear();
+
+    expect(tryCopyActiveSelection()).toBe(true);
+    expect(copyToClipboard).toHaveBeenCalledWith('hello');
+  });
+
+  it('returns false from tryCopyActiveSelection when nothing is selected', () => {
+    mount();
+
+    expect(tryCopyActiveSelection()).toBe(false);
+    expect(copyToClipboard).not.toHaveBeenCalled();
+  });
+
+  it('returns false from tryCopyActiveSelection for a bare click', () => {
+    const handler = mount();
+    handler(makeEvent('left-press', 1));
+    handler(makeEvent('left-release', 1));
+
+    expect(tryCopyActiveSelection()).toBe(false);
+    expect(copyToClipboard).not.toHaveBeenCalled();
+  });
+
+  it('unregisters tryCopyActiveSelection on unmount', () => {
+    const handler = mount();
+    selectHello(handler);
+    cleanup();
+
+    expect(tryCopyActiveSelection()).toBe(false);
   });
 });
