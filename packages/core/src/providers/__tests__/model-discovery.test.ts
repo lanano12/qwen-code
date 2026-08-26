@@ -81,6 +81,28 @@ describe('discoverProviderModels', () => {
     );
   });
 
+  it('applies llama.cpp meta.n_ctx as the serving context window', async () => {
+    fetchWithPolicyMock.mockResolvedValue(
+      response({
+        data: [
+          {
+            id: 'known-a',
+            meta: { n_ctx: 32768, n_ctx_train: 262144 },
+          },
+          {
+            id: 'new-model',
+            meta: { n_ctx: 16384 },
+          },
+        ],
+      }),
+    );
+
+    await expect(discoverProviderModels(options)).resolves.toEqual([
+      { id: 'known-a', contextWindowSize: 32768 },
+      { id: 'new-model', contextWindowSize: 16384 },
+    ]);
+  });
+
   it.each([
     [{ id: 'model-a' }],
     { data: ['model-a'] },

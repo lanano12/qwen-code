@@ -5,6 +5,7 @@
  */
 
 import { fetchWithPolicy } from '../utils/fetch.js';
+import { contextWindowFromOpenAIModelEntry } from './openai-compat-context-window.js';
 import type { ModelSpec } from './types.js';
 
 const DISCOVERY_TIMEOUT_MS = 5000;
@@ -22,7 +23,12 @@ interface DiscoverProviderModelsOptions {
   signal?: AbortSignal;
 }
 
-function readModelIds(value: unknown): string[] | null {
+interface DiscoveredModel {
+  id: string;
+  contextWindowSize?: number;
+}
+
+function readDiscoveredModels(value: unknown): DiscoveredModel[] | null {
   if (!value || typeof value !== 'object' || !('data' in value)) {
     return null;
   }
@@ -31,7 +37,7 @@ function readModelIds(value: unknown): string[] | null {
     return null;
   }
 
-  const ids: string[] = [];
+  const models: DiscoveredModel[] = [];
   const seen = new Set<string>();
   for (const item of data) {
     if (!item || typeof item !== 'object' || !('id' in item)) {
@@ -49,24 +55,39 @@ function readModelIds(value: unknown): string[] | null {
       !seen.has(trimmedId)
     ) {
       seen.add(trimmedId);
-      ids.push(trimmedId);
+      const contextWindowSize = contextWindowFromOpenAIModelEntry(item);
+      models.push(
+        contextWindowSize
+          ? { id: trimmedId, contextWindowSize }
+          : { id: trimmedId },
+      );
     }
   }
-  return ids.length > 0 ? ids : null;
+  return models.length > 0 ? models : null;
 }
 
 function mergeModelSpecs(
-  ids: string[],
+  discovered: DiscoveredModel[],
   staticModels: readonly ModelSpec[],
 ): ModelSpec[] {
-  const discoveredIds = new Set(ids);
-  const knownModels = staticModels.filter((model) =>
-    discoveredIds.has(model.id),
-  );
+  const discoveredIds = new Set(discovered.map((model) => model.id));
+  const liveById = new Map(discovered.map((model) => [model.id, model]));
+  const knownModels = staticModels
+    .filter((model) => discoveredIds.has(model.id))
+    .map((model) => {
+      const liveWindow = liveById.get(model.id)?.contextWindowSize;
+      return liveWindow ? { ...model, contextWindowSize: liveWindow } : model;
+    });
   const knownIds = new Set(knownModels.map((model) => model.id));
   return [
     ...knownModels,
-    ...ids.filter((id) => !knownIds.has(id)).map((id) => ({ id })),
+    ...discovered
+      .filter((model) => !knownIds.has(model.id))
+      .map((model) =>
+        model.contextWindowSize
+          ? { id: model.id, contextWindowSize: model.contextWindowSize }
+          : { id: model.id },
+      ),
   ];
 }
 
@@ -102,8 +123,10 @@ export async function discoverProviderModels({
       return null;
     }
 
-    const ids = readModelIds(JSON.parse(result.body.toString('utf8')));
-    return ids ? mergeModelSpecs(ids, staticModels) : null;
+    const models = readDiscoveredModels(
+      JSON.parse(result.body.toString('utf8')),
+    );
+    return models ? mergeModelSpecs(models, staticModels) : null;
   } catch {
     return null;
   }

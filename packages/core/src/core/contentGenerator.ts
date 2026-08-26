@@ -522,6 +522,14 @@ export async function createContentGenerator(
 
   try {
     if (authType === AuthType.USE_OPENAI) {
+      const { applyLiveOpenAICompatContextWindow } = await import(
+        '../providers/openai-compat-context-window.js'
+      );
+      const sources =
+        typeof config.getContentGeneratorConfigSources === 'function'
+          ? config.getContentGeneratorConfigSources()
+          : undefined;
+      await applyLiveOpenAICompatContextWindow(generatorConfig, sources);
       loadBaseGenerator = async () => {
         const { createOpenAIContentGenerator } = await import(
           './openaiContentGenerator/index.js'

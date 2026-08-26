@@ -230,6 +230,7 @@ describe('tokenLimit', () => {
       expect(tokenLimit('qwen3-vl-plus')).toBe(262144);
       expect(tokenLimit('qwen3-coder-7b')).toBe(262144);
       expect(tokenLimit('qwen3-coder-next')).toBe(262144);
+      expect(tokenLimit('qwen3.8-flash-next')).toBe(262144);
     });
 
     it('should return 1M for studio latest models', () => {
