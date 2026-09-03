@@ -2,6 +2,8 @@
 # Qwen Code CLI against local llama-server Flash-Next (:8008).
 # For FreeToken on :1919 use desktop/launch-freetoken.sh (or override
 # OPENAI_BASE_URL / OPENAI_MODEL).
+# Halo serve recipe + why this is the Hermes analogue:
+#   /ML_AI/AILeeMnq/docs/qwen38-flash-next-strix-halo.md
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
