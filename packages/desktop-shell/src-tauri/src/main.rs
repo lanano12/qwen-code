@@ -704,6 +704,11 @@ fn check_updates_silently(app: AppHandle) {
     if cfg!(debug_assertions) {
         return;
     }
+    // This tree's desktop binary is a local halogen launcher, version 0.0.1.
+    // The upstream updater would offer every public desktop release.
+    if std::env::var_os("QWEN_DESKTOP_DISABLE_UPDATES").is_some() {
+        return;
+    }
     tauri::async_runtime::spawn(async move {
         let Ok(Some(update)) = check_for_update(&app).await else {
             return;

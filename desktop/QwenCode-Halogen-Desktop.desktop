@@ -1,0 +1,14 @@
+[Desktop Entry]
+Version=1.1
+Type=Application
+Name=Qwen Code Desktop (Halogen)
+GenericName=Qwen Code
+Comment=Qwen Code desktop window against halogen-flash-server on :8731
+Exec=/ML_AI/qwen-code/desktop/launch-halogen-desktop.sh
+Icon=/ML_AI/qwen-code/packages/desktop-shell/src-tauri/icons/icon.png
+Path=/ML_AI
+Terminal=false
+Categories=Development;Utility;
+Keywords=AI;LLM;Qwen;Halogen;Desktop;
+StartupNotify=true
+StartupWMClass=qwen-code-desktop

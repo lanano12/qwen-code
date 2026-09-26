@@ -1,0 +1,14 @@
+[Desktop Entry]
+Version=1.1
+Type=Application
+Name=Qwen Code (Halogen)
+GenericName=Qwen Code CLI
+Comment=Qwen Code agent against halogen-flash-server on :8731
+Exec=ptyxis --new-window -T "Qwen Code (Halogen)" -d /ML_AI -x /ML_AI/qwen-code/desktop/launch-halogen.sh
+Icon=/ML_AI/qwen-code/desktop/icons/qwen-code.png
+Path=/ML_AI/qwen-code
+Terminal=false
+Categories=Development;Utility;
+Keywords=AI;LLM;Qwen;Halogen;Harness;TUI;coding;
+StartupNotify=true
+StartupWMClass=QwenCodeHalogen

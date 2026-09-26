@@ -1,0 +1,14 @@
+[Desktop Entry]
+Version=1.1
+Type=Application
+Name=Gold Start
+GenericName=Qwen Code
+Comment=Start Qwen Code Desktop against halogen-flash-server on :8731
+Exec=/ML_AI/qwen-code/desktop/launch-halogen-desktop.sh
+Icon=/ML_AI/qwen-code/desktop/icons/gold-start.png
+Path=/ML_AI
+Terminal=false
+Categories=Development;Utility;
+Keywords=AI;LLM;Qwen;Halogen;Gold;Start;
+StartupNotify=true
+StartupWMClass=qwen-code-desktop
