@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Native Qwen Code window (Tauri 2) against halogen-flash-server (:8731).
 # The terminal launcher is desktop/launch-halogen.sh.
-# The engine must already be up:
-#   /ML_AI/AILeeMnq/scripts/serve-halogen-flash.sh
+# An engine that is already listening on :8731 is detected by the window.
+# If it is not up, the AI Server page can start it.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -19,9 +19,6 @@ fail() {
   exit 1
 }
 
-if ! curl -sf --max-time 3 "${API}/models" >/dev/null; then
-  fail "halogen-flash is not answering at ${API}. Start /ML_AI/AILeeMnq/scripts/serve-halogen-flash.sh first."
-fi
 if [[ ! -x "$RUNTIME/node/bin/node" || ! -f "$RUNTIME/lib/cli-entry.js" ]]; then
   fail "Desktop runtime is missing at $RUNTIME. From $SHELL_DIR run: QWEN_DESKTOP_SKIP_BUILD=1 npm run build:runtime --workspaces=false"
 fi

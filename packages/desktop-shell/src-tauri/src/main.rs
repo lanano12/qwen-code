@@ -1,5 +1,6 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod ai_server;
 mod desktop_state;
 mod runtime;
 
@@ -257,7 +258,8 @@ fn setup_app(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
         }
     }
     check_updates_silently(handle.clone());
-    spawn_window_state_flusher(handle);
+    spawn_window_state_flusher(handle.clone());
+    ai_server::spawn();
     Ok(())
 }
 

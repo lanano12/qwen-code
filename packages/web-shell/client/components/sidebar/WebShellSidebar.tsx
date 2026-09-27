@@ -56,6 +56,7 @@ import {
   PlusIcon,
   RadioTowerIcon,
   SearchIcon,
+  ServerIcon,
   SettingsIcon,
   SquarePenIcon,
   SunIcon,
@@ -63,6 +64,11 @@ import {
 } from 'lucide-react';
 import { WebShellThemeId, type WebShellTheme } from '../../themeContext';
 import { useI18n } from '../../i18n';
+import {
+  EMPTY_AI_SERVER_STATUS,
+  fetchAiServer,
+  type AiServerStatus,
+} from '../ai-server/aiServerStatus';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { Tabs, TabsList, TabsTrigger } from '../ui/tabs';
@@ -341,6 +347,7 @@ interface WebShellSidebarProps {
   collapsed: boolean;
   onCollapsedChange: (collapsed: boolean) => void;
   onOpenSettings: () => void;
+  onOpenAiServer?: () => void;
   onOpenPlugins: () => void;
   onOpenChannels: () => void;
   onOpenDaemonStatus: () => void;
@@ -814,10 +821,72 @@ function SidebarSessionSurface({
   );
 }
 
+function AiServerNavButton({
+  collapsed,
+  onClick,
+}: {
+  collapsed: boolean;
+  onClick?: () => void;
+}) {
+  const { t } = useI18n();
+  const [status, setStatus] = useState<AiServerStatus>(EMPTY_AI_SERVER_STATUS);
+
+  useEffect(() => {
+    let stopped = false;
+    const tick = () => {
+      void fetchAiServer('/status')
+        .then((next) => {
+          if (!stopped) setStatus(next);
+        })
+        .catch(() => {
+          if (!stopped) setStatus(EMPTY_AI_SERVER_STATUS);
+        });
+    };
+    tick();
+    const timer = window.setInterval(tick, 2000);
+    return () => {
+      stopped = true;
+      window.clearInterval(timer);
+    };
+  }, []);
+
+  const stateLabel =
+    status.state === 'running'
+      ? t('aiServer.state.running')
+      : status.state === 'starting'
+        ? t('aiServer.state.starting')
+        : status.state === 'stopped'
+          ? t('aiServer.state.stopped')
+          : '';
+
+  return (
+    <button
+      className={styles.pluginButton}
+      type="button"
+      title={
+        stateLabel
+          ? `${t('sidebar.aiServer')} — ${stateLabel}`
+          : t('sidebar.aiServer')
+      }
+      aria-label={t('sidebar.aiServer')}
+      onClick={() => onClick?.()}
+    >
+      <span className={styles.navIcon}>
+        <ServerIcon size={16} strokeWidth={1.2} />
+      </span>
+      {!collapsed && <span>{t('sidebar.aiServer')}</span>}
+      {!collapsed && stateLabel ? (
+        <span className={styles.navStatus}>{stateLabel}</span>
+      ) : null}
+    </button>
+  );
+}
+
 export function WebShellSidebar({
   collapsed,
   onCollapsedChange,
   onOpenSettings,
+  onOpenAiServer,
   onOpenPlugins,
   onOpenChannels,
   onOpenDaemonStatus,
@@ -4999,6 +5068,9 @@ export function WebShellSidebar({
             )}
           </div>
         )}
+        <div className={styles.primaryNav}>
+          <AiServerNavButton collapsed={collapsed} onClick={onOpenAiServer} />
+        </div>
         {primaryNavItems.has('newTask') && (
           <div
             className={cx(

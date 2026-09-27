@@ -171,6 +171,7 @@ import {
   parseSplitSessionIds,
   saveSplitSessions,
 } from './utils/splitUrl';
+import { AiServerPage } from './components/ai-server/AiServerPage';
 import { ScheduledTasksDialog } from './components/dialogs/ScheduledTasksDialog';
 import { GoalsDialog } from './components/dialogs/GoalsDialog';
 import { parseWebShellGoalCommand } from './utils/goalCondition';
@@ -5022,7 +5023,7 @@ export function App({
   // a chat returns to 'chat'. (Daemon Status is no longer a boolean dialog — it
   // is one of the activePanel values below.)
   const [mainView, setMainView] = useState<
-    'chat' | 'scheduledTasks' | 'goals' | 'split'
+    'chat' | 'aiServer' | 'scheduledTasks' | 'goals' | 'split'
   >('chat');
   const mainViewRef = useRef(mainView);
   const useFloatingArtifactPanel =
@@ -5321,6 +5322,10 @@ export function App({
       showTips: false,
     });
   }, [workspaceActions]);
+  const openAiServer = useCallback(() => {
+    setActivePanel(null);
+    setMainView('aiServer');
+  }, []);
   const openScheduledTasks = useCallback(() => {
     setActivePanel(null);
     setMainView('scheduledTasks');
@@ -5629,7 +5634,11 @@ export function App({
     // the same reason. The split view is deliberately NOT dismissed: each pane
     // owns and renders its own session's approval, so an approval on the (outer)
     // main session must not yank the user out of the panes they are working in.
-    if (mainView === 'scheduledTasks' || mainView === 'goals') {
+    if (
+      mainView === 'aiServer' ||
+      mainView === 'scheduledTasks' ||
+      mainView === 'goals'
+    ) {
       setMainView('chat');
     }
   }, [
@@ -12267,6 +12276,10 @@ export function App({
                     closeMobileDrawer();
                     openPanel('settings');
                   }}
+                  onOpenAiServer={() => {
+                    closeMobileDrawer();
+                    openAiServer();
+                  }}
                   onOpenPlugins={() => {
                     closeMobileDrawer();
                     openPanel('plugins');
@@ -12711,6 +12724,39 @@ export function App({
                     </ShadowDomBoundary>
                   </div>
                 </section>
+              )}
+              {mainView === 'aiServer' && (
+                <div className={styles.fullPage} data-testid="ai-server-page">
+                  <div className={styles.fullPageHeader}>
+                    <button
+                      type="button"
+                      className={styles.fullPageBack}
+                      onClick={() => setMainView('chat')}
+                      aria-label={t('common.back')}
+                      title={t('common.back')}
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        width="18"
+                        height="18"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden="true"
+                      >
+                        <path d="M15 18l-6-6 6-6" />
+                      </svg>
+                    </button>
+                    <div className={styles.fullPageTitle}>
+                      {t('sidebar.aiServer')}
+                    </div>
+                  </div>
+                  <div className={styles.fullPageBody}>
+                    <AiServerPage />
+                  </div>
+                </div>
               )}
               {mainView === 'scheduledTasks' && (
                 <div

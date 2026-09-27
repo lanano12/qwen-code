@@ -29,7 +29,10 @@ const WEB_SHELL_CSP_DIRECTIVES = [
   "style-src 'self' 'unsafe-inline'",
   "font-src 'self' data:",
   "img-src 'self' data: blob:",
-  "connect-src 'self'",
+  // 127.0.0.1:8742 is the desktop shell's loopback control port for the
+  // local halogen server. The page reads it at startup so a server that
+  // was already running is visible without a same-origin proxy.
+  "connect-src 'self' http://127.0.0.1:8742",
   "worker-src 'self' blob:",
   // base-uri does NOT fall back to default-src; lock it so an injected <base>
   // (the SPA renders AI-generated markdown) cannot repoint relative URLs to an
