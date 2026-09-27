@@ -207,7 +207,7 @@ fn setup_app(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     let (width, height) = default_window_size();
 
     let window = WebviewWindowBuilder::new(&handle, "main", WebviewUrl::App("index.html".into()))
-        .title("Qwen Code")
+        .title("Monquay Qwen Code")
         .inner_size(width, height)
         .min_inner_size(900.0, 600.0)
         .on_navigation(move |url| is_allowed_navigation(url, &navigation_origin))

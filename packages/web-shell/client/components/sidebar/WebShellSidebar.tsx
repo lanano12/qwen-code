@@ -4993,7 +4993,7 @@ export function WebShellSidebar({
                   <IconQwenLogo />
                 </span>
                 {!collapsed && (
-                  <span className={styles.brandName}>Qwen Code</span>
+                  <span className={styles.brandName}>Monquay Qwen Code</span>
                 )}
               </>
             )}
