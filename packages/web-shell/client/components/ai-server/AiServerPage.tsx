@@ -1,25 +1,25 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useI18n } from '../../i18n';
 import {
-  EMPTY_AI_SERVER_STATUS,
+  EMPTY_AI_SERVER_LIST,
   fetchAiServer,
+  type AiServerList,
   type AiServerStatus,
 } from './aiServerStatus';
 import styles from './AiServerPage.module.css';
 
 export function AiServerPage() {
   const { t } = useI18n();
-  const [status, setStatus] = useState<AiServerStatus>(EMPTY_AI_SERVER_STATUS);
-  const [busy, setBusy] = useState(false);
+  const [list, setList] = useState<AiServerList>(EMPTY_AI_SERVER_LIST);
+  const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     try {
-      const next = await fetchAiServer('/status');
-      setStatus(next);
+      setList(await fetchAiServer('/status'));
       setError(null);
     } catch (cause) {
-      setStatus(EMPTY_AI_SERVER_STATUS);
+      setList(EMPTY_AI_SERVER_LIST);
       setError(cause instanceof Error ? cause.message : String(cause));
     }
   }, []);
@@ -32,84 +32,106 @@ export function AiServerPage() {
     return () => window.clearInterval(timer);
   }, [refresh]);
 
-  const run = async (path: '/start' | '/stop') => {
-    setBusy(true);
+  const run = async (id: string, action: 'start' | 'stop') => {
+    setBusyId(id);
     setError(null);
     try {
-      setStatus(await fetchAiServer(path));
+      setList(await fetchAiServer(`/${action}/${id}`));
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : String(cause));
     } finally {
-      setBusy(false);
+      setBusyId(null);
     }
   };
 
-  const state = status.state;
-  const pillClass =
-    state === 'running' ? `${styles.pill} ${styles.pillRunning}` : styles.pill;
-  const stateLabel =
-    state === 'running'
-      ? t('aiServer.state.running')
-      : state === 'starting'
-        ? t('aiServer.state.starting')
-        : state === 'stopped'
-          ? t('aiServer.state.stopped')
-          : t('aiServer.state.unknown');
+  const otherBusy = (server: AiServerStatus) =>
+    list.servers.some(
+      (other) =>
+        other.id !== server.id &&
+        (other.state === 'running' || other.state === 'starting'),
+    );
 
   return (
     <div className={styles.root}>
       <p className={styles.intro}>{t('aiServer.intro')}</p>
-      <section className={styles.card}>
-        <div className={styles.cardHeader}>
-          <div className={styles.cardTitle}>{t('aiServer.cardTitle')}</div>
-          <span className={pillClass}>{stateLabel}</span>
-        </div>
-        <dl className={styles.rows}>
-          <div className={styles.row}>
-            <dt>{t('aiServer.endpoint')}</dt>
-            <dd>{status.endpoint ?? 'http://127.0.0.1:8731/v1'}</dd>
-          </div>
-          <div className={styles.row}>
-            <dt>{t('aiServer.model')}</dt>
-            <dd>{status.model || '—'}</dd>
-          </div>
-          <div className={styles.row}>
-            <dt>{t('aiServer.version')}</dt>
-            <dd>{status.version || '—'}</dd>
-          </div>
-          <div className={styles.row}>
-            <dt>{t('aiServer.context')}</dt>
-            <dd>{status.context ?? '—'}</dd>
-          </div>
-        </dl>
-        <div className={styles.actions}>
-          <button
-            type="button"
-            className={styles.primaryButton}
-            disabled={busy || state === 'running' || state === 'starting'}
-            onClick={() => void run('/start')}
-          >
-            {t('aiServer.start')}
-          </button>
-          <button
-            type="button"
-            className={styles.secondaryButton}
-            disabled={busy || state === 'stopped' || state === 'unknown'}
-            onClick={() => void run('/stop')}
-          >
-            {t('aiServer.stop')}
-          </button>
-        </div>
-        {status.adopted ? (
-          <p className={styles.detail}>{t('aiServer.alreadyRunning')}</p>
-        ) : null}
-        {status.detail ? (
-          <p className={styles.detail}>{status.detail}</p>
-        ) : null}
-        {error ? (
-          <p className={styles.detail}>{t('aiServer.unreachable')}</p>
-        ) : null}
-      </section>
+      {list.servers.map((server) => {
+        const state = server.state;
+        const pillClass =
+          state === 'running'
+            ? `${styles.pill} ${styles.pillRunning}`
+            : styles.pill;
+        const stateLabel =
+          state === 'running'
+            ? t('aiServer.state.running')
+            : state === 'starting'
+              ? t('aiServer.state.starting')
+              : state === 'stopped'
+                ? t('aiServer.state.stopped')
+                : t('aiServer.state.unknown');
+        const blocked = otherBusy(server);
+        return (
+          <section className={styles.card} key={server.id}>
+            <div className={styles.cardHeader}>
+              <div className={styles.cardTitle}>
+                {server.title || server.id}
+              </div>
+              <span className={pillClass}>{stateLabel}</span>
+            </div>
+            <dl className={styles.rows}>
+              <div className={styles.row}>
+                <dt>{t('aiServer.endpoint')}</dt>
+                <dd>{server.endpoint || '—'}</dd>
+              </div>
+              <div className={styles.row}>
+                <dt>{t('aiServer.model')}</dt>
+                <dd>{server.model || '—'}</dd>
+              </div>
+              <div className={styles.row}>
+                <dt>{t('aiServer.version')}</dt>
+                <dd>{server.version || '—'}</dd>
+              </div>
+              <div className={styles.row}>
+                <dt>{t('aiServer.context')}</dt>
+                <dd>{server.context ?? '—'}</dd>
+              </div>
+            </dl>
+            <div className={styles.actions}>
+              <button
+                type="button"
+                className={styles.primaryButton}
+                disabled={
+                  busyId !== null ||
+                  blocked ||
+                  state === 'running' ||
+                  state === 'starting'
+                }
+                onClick={() => void run(server.id, 'start')}
+              >
+                {t('aiServer.start')}
+              </button>
+              <button
+                type="button"
+                className={styles.secondaryButton}
+                disabled={
+                  busyId !== null || state === 'stopped' || state === 'unknown'
+                }
+                onClick={() => void run(server.id, 'stop')}
+              >
+                {t('aiServer.stop')}
+              </button>
+            </div>
+            {server.adopted ? (
+              <p className={styles.detail}>{t('aiServer.alreadyRunning')}</p>
+            ) : null}
+            {server.detail ? (
+              <p className={styles.detail}>{server.detail}</p>
+            ) : null}
+          </section>
+        );
+      })}
+      {error ? (
+        <p className={styles.detail}>{t('aiServer.unreachable')}</p>
+      ) : null}
     </div>
   );
 }

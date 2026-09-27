@@ -1367,9 +1367,11 @@ function areSessionIdsEqual(
 function getInitialLanguage(): WebShellLanguage {
   if (typeof window === 'undefined') return 'en';
   const params = new URLSearchParams(window.location.search);
-  return normalizeLanguage(
-    params.get('language') ?? params.get('lang') ?? navigator.language,
-  );
+  const requested = params.get('language') ?? params.get('lang');
+  // This desktop follows an explicit choice. Without one, stay in English
+  // instead of the desktop locale, which is Chinese on this machine.
+  if (!requested) return 'en';
+  return normalizeLanguage(requested);
 }
 
 function formatError(error: unknown, fallback: string): string {

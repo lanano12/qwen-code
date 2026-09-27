@@ -65,9 +65,10 @@ import {
 import { WebShellThemeId, type WebShellTheme } from '../../themeContext';
 import { useI18n } from '../../i18n';
 import {
-  EMPTY_AI_SERVER_STATUS,
+  aiServerSummary,
+  EMPTY_AI_SERVER_LIST,
   fetchAiServer,
-  type AiServerStatus,
+  type AiServerList,
 } from '../ai-server/aiServerStatus';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
@@ -829,17 +830,17 @@ function AiServerNavButton({
   onClick?: () => void;
 }) {
   const { t } = useI18n();
-  const [status, setStatus] = useState<AiServerStatus>(EMPTY_AI_SERVER_STATUS);
+  const [list, setList] = useState<AiServerList>(EMPTY_AI_SERVER_LIST);
 
   useEffect(() => {
     let stopped = false;
     const tick = () => {
       void fetchAiServer('/status')
         .then((next) => {
-          if (!stopped) setStatus(next);
+          if (!stopped) setList(next);
         })
         .catch(() => {
-          if (!stopped) setStatus(EMPTY_AI_SERVER_STATUS);
+          if (!stopped) setList(EMPTY_AI_SERVER_LIST);
         });
     };
     tick();
@@ -850,12 +851,13 @@ function AiServerNavButton({
     };
   }, []);
 
+  const summary = aiServerSummary(list);
   const stateLabel =
-    status.state === 'running'
-      ? t('aiServer.state.running')
-      : status.state === 'starting'
+    summary.state === 'running'
+      ? summary.label
+      : summary.state === 'starting'
         ? t('aiServer.state.starting')
-        : status.state === 'stopped'
+        : summary.state === 'stopped'
           ? t('aiServer.state.stopped')
           : '';
 

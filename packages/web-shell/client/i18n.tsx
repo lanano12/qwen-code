@@ -1367,7 +1367,7 @@ const EN: Messages = {
   'sidebar.goals': 'Goals',
   'sidebar.aiServer': 'AI Server',
   'aiServer.intro':
-    'Start and stop the local halogen server for Qwen3.8-Flash-Next. It holds about 88 GiB, so run it on its own.',
+    'Start and stop the local engines. They share one GPU, so only one can run. Flash-Next holds about 88 GiB, the 27B engine about 36 GiB, and Coder about 17 GiB.',
   'aiServer.cardTitle': 'Qwen3.8-Flash-Next',
   'aiServer.endpoint': 'Endpoint',
   'aiServer.model': 'Model',
@@ -4434,7 +4434,7 @@ const ZH: Messages = {
   'sidebar.goals': '目标',
   'sidebar.aiServer': 'AI 服务器',
   'aiServer.intro':
-    '启动或停止本地 halogen 上的 Qwen3.8-Flash-Next。它大约占用 88 GiB，请单独运行。',
+    '启动或停止本地引擎。它们共用一块 GPU，因此同时只能运行一个。Flash-Next 约占用 88 GiB，27B 约占用 36 GiB，Coder 约占用 17 GiB。',
   'aiServer.cardTitle': 'Qwen3.8-Flash-Next',
   'aiServer.endpoint': '地址',
   'aiServer.model': '模型',
