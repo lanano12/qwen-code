@@ -8,6 +8,11 @@ import {
 } from './aiServerStatus';
 import styles from './AiServerPage.module.css';
 
+function gib(bytes: number | undefined): string {
+  if (!bytes || bytes <= 0) return '0.0';
+  return (bytes / 1024 ** 3).toFixed(1);
+}
+
 export function AiServerPage() {
   const { t } = useI18n();
   const [list, setList] = useState<AiServerList>(EMPTY_AI_SERVER_LIST);
@@ -32,11 +37,12 @@ export function AiServerPage() {
     return () => window.clearInterval(timer);
   }, [refresh]);
 
-  const run = async (id: string, action: 'start' | 'stop') => {
+  const run = async (id: string, action: 'start' | 'stop' | 'stop-all') => {
     setBusyId(id);
     setError(null);
     try {
-      setList(await fetchAiServer(`/${action}/${id}`));
+      const path = action === 'stop-all' ? '/stop-all' : `/${action}/${id}`;
+      setList(await fetchAiServer(path));
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : String(cause));
     } finally {
@@ -51,9 +57,43 @@ export function AiServerPage() {
         (other.state === 'running' || other.state === 'starting'),
     );
 
+  const anyActive = list.servers.some(
+    (server) => server.state === 'running' || server.state === 'starting',
+  );
+  const memory = list.memory;
+  const sramUsed = gib(memory?.sram_used);
+  const sramTotal = gib(memory?.sram_total);
+  const hostUsed = memory?.host_used ?? 0;
+  const showHost = hostUsed > (memory?.sram_used ?? 0) + 4 * 1024 * 1024 * 1024;
+
   return (
     <div className={styles.root}>
       <p className={styles.intro}>{t('aiServer.intro')}</p>
+      <div className={styles.contextBar}>
+        <div className={styles.contextText}>
+          <div className={styles.contextTitle}>
+            {t('aiServer.sram', { used: sramUsed, total: sramTotal })}
+          </div>
+          {showHost ? (
+            <p className={styles.detail}>
+              {t('aiServer.sramHost', { used: gib(hostUsed) })}
+            </p>
+          ) : null}
+        </div>
+        <button
+          type="button"
+          className={styles.secondaryButton}
+          disabled={
+            busyId !== null ||
+            (!anyActive &&
+              (memory?.sram_used ?? 0) < 64 * 1024 * 1024 &&
+              hostUsed < 1024 ** 3)
+          }
+          onClick={() => void run('all', 'stop-all')}
+        >
+          {t('aiServer.stopAll')}
+        </button>
+      </div>
       {list.servers.map((server) => {
         const state = server.state;
         const pillClass =

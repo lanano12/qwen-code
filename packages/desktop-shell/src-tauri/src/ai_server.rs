@@ -111,6 +111,9 @@ fn dispatch(control: &Control, method: &str, path: &str) -> (&'static str, Strin
             return ("200 OK", stop(control, id).to_string());
         }
     }
+    if method == "POST" && path == "/stop-all" {
+        return ("200 OK", stop_all(control).to_string());
+    }
     ("404 Not Found", json!({ "error": "not found" }).to_string())
 }
 
@@ -148,8 +151,14 @@ fn write_response(stream: &mut TcpStream, status: &str, body: &str) -> std::io::
 
 fn snapshot(control: &Control) -> Value {
     reap_children(control);
+    let memory = server_memory();
     json!({
         "servers": SERVERS.iter().map(|server| one_status(control, server)).collect::<Vec<_>>(),
+        "memory": {
+            "sram_used": memory.0,
+            "sram_total": memory.1,
+            "host_used": memory.2,
+        },
     })
 }
 
@@ -291,17 +300,37 @@ fn start(control: &Control, id: &str) -> Value {
 }
 
 fn stop(control: &Control, id: &str) -> Value {
-    let Some(server) = spec(id) else {
-        return snapshot(control);
-    };
+    if let Some(server) = spec(id) {
+        stop_server(server);
+    }
+    reap_children(control);
+    snapshot(control)
+}
+
+fn stop_all(control: &Control) -> Value {
+    for server in SERVERS {
+        stop_server(server);
+    }
+    for port in LOCAL_AI_PORTS {
+        stop_publisher(*port);
+    }
+    reap_children(control);
+    snapshot(control)
+}
+
+fn stop_server(server: &ServerSpec) {
     stop_container(server.container);
     for name in server.also_stop {
         stop_container(name);
     }
     stop_publisher(server.port);
-    reap_children(control);
-    snapshot(control)
 }
+
+/// Host ports used by the local model servers on this machine.
+const LOCAL_AI_PORTS: &[u16] = &[
+    1919, 8000, 8001, 8002, 8003, 8005, 8006, 8007, 8008, 8080, 8081, 8082, 8083, 8084,
+    8090, 8091, 8731, 8732,
+];
 
 fn stop_container(name: &str) {
     if name.is_empty() {
@@ -411,6 +440,189 @@ fn container_state(name: &str) -> Option<String> {
     }
 }
 
+/// SRAM used by running local AI servers, the GTT pool size, and those
+/// processes' host RSS. SRAM here is `drm-resident-gtt`, the GPU-visible
+/// memory GGUF servers occupy. Halogen pins weights in host RAM instead.
+fn server_memory() -> (u64, u64, u64) {
+    let pids = local_ai_pids();
+    let mut sram = 0_u64;
+    let mut host = 0_u64;
+    for pid in pids {
+        sram += gtt_bytes_for_pid(pid);
+        host += rss_bytes(pid);
+    }
+    (sram, gtt_total_bytes(), host)
+}
+
+fn local_ai_pids() -> Vec<u32> {
+    let mut roots = Vec::new();
+    if let Ok(output) = Command::new("podman")
+        .args(["ps", "--format", "{{.Names}}\t{{.Ports}}"])
+        .output()
+    {
+        if let Ok(text) = String::from_utf8(output.stdout) {
+            for line in text.lines() {
+                let mut parts = line.split('\t');
+                let Some(name) = parts.next() else { continue };
+                let ports = parts.next().unwrap_or("");
+                if name.is_empty() || !ports_are_local_ai(ports) {
+                    continue;
+                }
+                if let Some(pid) = container_pid(name) {
+                    roots.push(pid);
+                }
+            }
+        }
+    }
+    if let Ok(entries) = std::fs::read_dir("/proc") {
+        for entry in entries.flatten() {
+            let Ok(pid) = entry.file_name().to_string_lossy().parse::<u32>() else {
+                continue;
+            };
+            let Ok(cmd) = std::fs::read(format!("/proc/{pid}/cmdline")) else {
+                continue;
+            };
+            let cmd = String::from_utf8_lossy(&cmd);
+            if cmd.contains("llama-server") || cmd.contains("halogen-flash") {
+                roots.push(pid);
+            }
+        }
+    }
+    let mut all = Vec::new();
+    for root in roots {
+        for pid in process_tree(root) {
+            if !all.contains(&pid) {
+                all.push(pid);
+            }
+        }
+    }
+    all
+}
+
+fn ports_are_local_ai(ports: &str) -> bool {
+    LOCAL_AI_PORTS.iter().any(|port| {
+        ports.contains(&format!(":{port}->")) || ports.contains(&format!(":{port}/"))
+    })
+}
+
+fn container_pid(name: &str) -> Option<u32> {
+    let output = Command::new("podman")
+        .args(["inspect", "-f", "{{.State.Pid}}", name])
+        .output()
+        .ok()?;
+    if !output.status.success() {
+        return None;
+    }
+    let text = String::from_utf8(output.stdout).ok()?;
+    let pid = text.trim().parse::<u32>().ok()?;
+    if pid == 0 { None } else { Some(pid) }
+}
+
+fn process_tree(root: u32) -> Vec<u32> {
+    let mut all = vec![root];
+    let mut index = 0;
+    while index < all.len() {
+        let pid = all[index];
+        index += 1;
+        let path = format!("/proc/{pid}/task/{pid}/children");
+        let Ok(text) = std::fs::read_to_string(path) else {
+            continue;
+        };
+        for token in text.split_whitespace() {
+            if let Ok(child) = token.parse::<u32>() {
+                if !all.contains(&child) {
+                    all.push(child);
+                }
+            }
+        }
+    }
+    all
+}
+
+fn gtt_bytes_for_pid(pid: u32) -> u64 {
+    let Ok(entries) = std::fs::read_dir(format!("/proc/{pid}/fdinfo")) else {
+        return 0;
+    };
+    let mut by_client: HashMap<String, u64> = HashMap::new();
+    for entry in entries.flatten() {
+        let Ok(text) = std::fs::read_to_string(entry.path()) else {
+            continue;
+        };
+        if let Some((client, bytes)) = fdinfo_gtt(&text) {
+            by_client.insert(client, bytes);
+        }
+    }
+    by_client.values().sum()
+}
+
+fn fdinfo_gtt(text: &str) -> Option<(String, u64)> {
+    if !text
+        .lines()
+        .any(|line| line.starts_with("drm-driver:") && line.contains("amdgpu"))
+    {
+        return None;
+    }
+    let mut client = None;
+    let mut resident = None;
+    for line in text.lines() {
+        let Some((key, value)) = line.split_once(':') else {
+            continue;
+        };
+        let value = value.trim();
+        match key.trim() {
+            "drm-client-id" => client = Some(value.to_string()),
+            "drm-resident-gtt" => {
+                resident = value
+                    .split_whitespace()
+                    .next()
+                    .and_then(|number| number.parse::<u64>().ok());
+            }
+            _ => {}
+        }
+    }
+    Some((client?, resident.unwrap_or(0)))
+}
+
+fn rss_bytes(pid: u32) -> u64 {
+    let Ok(text) = std::fs::read_to_string(format!("/proc/{pid}/status")) else {
+        return 0;
+    };
+    for line in text.lines() {
+        let Some(rest) = line.strip_prefix("VmRSS:") else {
+            continue;
+        };
+        let kb = rest
+            .split_whitespace()
+            .next()
+            .and_then(|number| number.parse::<u64>().ok())
+            .unwrap_or(0);
+        return kb * 1024;
+    }
+    0
+}
+
+fn gtt_total_bytes() -> u64 {
+    let Ok(entries) = std::fs::read_dir("/sys/class/drm") else {
+        return 0;
+    };
+    let mut best = 0_u64;
+    for entry in entries.flatten() {
+        let name = entry.file_name();
+        let name = name.to_string_lossy();
+        if !name.starts_with("card") || name.contains('-') {
+            continue;
+        }
+        let path = entry.path().join("device/mem_info_gtt_total");
+        let Ok(text) = std::fs::read_to_string(path) else {
+            continue;
+        };
+        if let Ok(total) = text.trim().parse::<u64>() {
+            best = best.max(total);
+        }
+    }
+    best
+}
+
 fn version_label(health: &Value) -> String {
     match health.get("version") {
         Some(Value::String(version)) => version.clone(),
@@ -455,5 +667,16 @@ mod tests {
         assert_eq!(health["model"], "coder");
         assert_eq!(health["context"], 65536);
         assert_eq!(super::version_label(&health), "llama.cpp");
+    }
+
+    #[test]
+    fn fdinfo_gtt_reads_one_amdgpu_client() {
+        let text = "\
+drm-driver:\tamdgpu\n\
+drm-client-id:\t7\n\
+drm-resident-gtt:\t1073741824\n";
+        let (client, bytes) = super::fdinfo_gtt(text).expect("gtt");
+        assert_eq!(client, "7");
+        assert_eq!(bytes, 1_073_741_824);
     }
 }

@@ -17,8 +17,15 @@ export interface AiServerStatus {
   detail?: string | null;
 }
 
+export interface AiServerMemory {
+  sram_used?: number;
+  sram_total?: number;
+  host_used?: number;
+}
+
 export interface AiServerList {
   servers: AiServerStatus[];
+  memory?: AiServerMemory;
 }
 
 export const EMPTY_AI_SERVER_LIST: AiServerList = { servers: [] };

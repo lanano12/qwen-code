@@ -1380,6 +1380,10 @@ const EN: Messages = {
   'aiServer.state.stopped': 'Stopped',
   'aiServer.state.unknown': 'Unavailable',
   'aiServer.alreadyRunning': 'Already running when this window opened.',
+  'aiServer.sram': (v) => `SRAM ${v?.used ?? '0.0'} / ${v?.total ?? '0.0'} GiB`,
+  'aiServer.sramHost': (v) =>
+    `Weights pinned in host RAM: ${v?.used ?? '0.0'} GiB`,
+  'aiServer.stopAll': 'Stop All',
   'aiServer.unreachable':
     'The desktop control service is not answering. Open this page from Monquay Qwen Code.',
   'sidebar.themeLight': 'Switch to light theme',
@@ -4447,6 +4451,9 @@ const ZH: Messages = {
   'aiServer.state.stopped': '已停止',
   'aiServer.state.unknown': '不可用',
   'aiServer.alreadyRunning': '打开窗口时服务器已经在运行。',
+  'aiServer.sram': (v) => `SRAM ${v?.used ?? '0.0'} / ${v?.total ?? '0.0'} GiB`,
+  'aiServer.sramHost': (v) => `权重锁定在主机内存：${v?.used ?? '0.0'} GiB`,
+  'aiServer.stopAll': '全部停止',
   'aiServer.unreachable':
     '桌面控制服务没有响应。请从 Monquay Qwen Code 打开此页面。',
   'sidebar.themeLight': '切换到浅色主题',

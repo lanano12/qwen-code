@@ -12,6 +12,31 @@
   color: var(--muted-foreground);
 }
 
+.contextBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--background);
+}
+
+.contextText {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.contextTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
 .card {
   display: flex;
   flex-direction: column;
